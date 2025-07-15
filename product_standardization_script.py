@@ -512,7 +512,7 @@ class ProductStandardizer:
 # 使用示例
 if __name__ == "__main__":
     # 配置Deepseek API
-    API_KEY = "sk-033ca439b47a45e28abaef46c4279fd9"  # 替换为你的API密钥
+    API_KEY = "sk-xxxxxxxxxxxxxxxxxx"  # 替换为你的API密钥
     
     # 创建处理器实例
     processor = ProductStandardizer(API_KEY)
