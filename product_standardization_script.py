@@ -7,6 +7,10 @@ from typing import List, Dict, Any
 import logging
 import os
 import glob
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -511,8 +515,13 @@ class ProductStandardizer:
 
 # 使用示例
 if __name__ == "__main__":
-    # 配置Deepseek API
-    API_KEY = "sk-xxxxxxxxxxxxxxxxxx"  # 替换为你的API密钥
+    # 从环境变量获取Deepseek API密钥
+    API_KEY = os.getenv('DEEPSEEK_API_KEY')
+    
+    if not API_KEY:
+        logger.error("请设置环境变量 DEEPSEEK_API_KEY")
+        logger.error("可以创建 .env 文件并添加: DEEPSEEK_API_KEY=your_api_key")
+        exit(1)
     
     # 创建处理器实例
     processor = ProductStandardizer(API_KEY)

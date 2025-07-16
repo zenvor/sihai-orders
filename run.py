@@ -81,7 +81,8 @@ class OrderProcessorLauncher:
             "pandas",
             "openpyxl", 
             "openai",
-            "requests"
+            "requests",
+            "python-dotenv"
         ]
         
         pip_exe = self.get_pip_executable()
@@ -122,6 +123,20 @@ class OrderProcessorLauncher:
             print("请确保Excel模板文件在同一目录下")
         else:
             print(f"✅ 找到Excel文件: {[f.name for f in excel_files]}")
+            
+        # 检查环境变量配置文件
+        env_file = self.script_dir / ".env"
+        env_template = self.script_dir / "env.template"
+        
+        if not env_file.exists():
+            if env_template.exists():
+                print("⚠️  警告: 找不到.env文件")
+                print("请复制env.template为.env文件，并配置您的API密钥")
+            else:
+                print("⚠️  警告: 找不到环境变量配置文件")
+                print("请创建.env文件并添加: DEEPSEEK_API_KEY=your_api_key")
+        else:
+            print("✅ .env配置文件存在")
             
     def run_main_script(self):
         """运行主脚本"""
