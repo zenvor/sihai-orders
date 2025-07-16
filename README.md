@@ -7,6 +7,10 @@
 ### 第一步：准备文件
 1. 确保文件夹里有 `order.txt`（订单数据）
 2. 确保文件夹里有 Excel 表格文件（.xlsx格式）
+3. 配置API密钥：
+   - 复制 `env.template` 文件为 `.env`
+   - 在 `.env` 文件中将 `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` 替换为你的真实 Deepseek API 密钥
+   - 如果没有API密钥，请到 [Deepseek官网](https://platform.deepseek.com/) 注册获取
 
 ### 第二步：运行程序
 **Windows用户**：
