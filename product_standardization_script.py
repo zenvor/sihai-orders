@@ -154,36 +154,77 @@ class ProductStandardizer:
         
         return name
     
+    def parse_product_line(self, line: str) -> tuple:
+        """
+        解析单行商品数据，支持多种格式
+
+        支持的格式：
+        1. 商品名:数量件 (标准格式)
+        2. 商品名：数量件 (中文冒号)
+        3. 商品名  数量 (多空格分隔)
+        4. 商品名    1 (制表符或多个空格分隔，数字代表数量)
+
+        Args:
+            line: 单行数据
+
+        Returns:
+            (商品名, 数量) 元组，无法解析时返回 (None, None)
+        """
+        line = line.strip()
+        if not line:
+            return None, None
+
+        product_name = None
+        quantity = None
+
+        # 方式1: 冒号分隔（:或：）
+        if ':' in line or '：' in line:
+            parts = re.split(r'[：:]', line)
+            if len(parts) >= 2:
+                product_name = parts[0].strip()
+                quantity_str = parts[1].strip()
+                # 提取数量（可能是 "2件" 或 "2"）
+                match = re.search(r'(\d+)', quantity_str)
+                if match:
+                    quantity = int(match.group(1))
+
+        # 方式2: 多空格或制表符分隔（需要数字在末尾）
+        if product_name is None:
+            # 匹配：文本 + 多个空格或制表符 + 数字
+            match = re.match(r'^(.+?)\s{2,}(\d+)$', line)
+            if match:
+                product_name = match.group(1).strip()
+                quantity = int(match.group(2))
+            else:
+                # 方式3: 直接跟数字的格式（如 "150g鲜装牛肉丸2件" 或 "150g鲜装牛肉丸2"）
+                match = re.match(r'(.+?)(\d+)件?$', line)
+                if match:
+                    product_name = match.group(1).strip()
+                    quantity = int(match.group(2))
+
+        return product_name, quantity
+
     def extract_all_product_variants(self, parsed_data: List[Dict[str, Any]]) -> set:
         """
         提取所有商品变体名称
-        
+
         Args:
             parsed_data: 解析后的数据
-            
+
         Returns:
             所有商品变体的集合
         """
         all_products = set()
-        
+
         for entry in parsed_data:
             lines = entry['data'].strip().split('\n')
             for line in lines:
-                line = line.strip()
-                if not line:
+                # 使用通用的行解析方法
+                product_name, _ = self.parse_product_line(line)
+
+                if not product_name:
                     continue
-                
-                # 解析商品名称
-                if ':' in line or '：' in line:
-                    product_name = re.split(r'[：:]', line)[0].strip()
-                else:
-                    # 处理没有冒号的情况，如 "150g鲜装牛肉丸2件"
-                    match = re.match(r'(.+?)(\d+件)', line)
-                    if match:
-                        product_name = match.group(1).strip()
-                    else:
-                        continue
-                
+
                 # 标准化商品名称
                 normalized_name = self.normalize_product_name(product_name)
                 all_products.add(normalized_name)
@@ -304,32 +345,9 @@ class ProductStandardizer:
             shop_products = {}
             
             for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                    
-                # 解析商品和数量
-                product_name = None
-                quantity = None
-                
-                if ':' in line or '：' in line:
-                    # 标准格式：商品名：数量
-                    parts = re.split(r'[：:]', line)
-                    if len(parts) >= 2:
-                        product_name = parts[0].strip()
-                        quantity_str = parts[1].strip()
-                        
-                        # 提取数量
-                        quantity_match = re.search(r'(\d+)件', quantity_str)
-                        if quantity_match:
-                            quantity = int(quantity_match.group(1))
-                else:
-                    # 无冒号格式：150g鲜装牛肉丸2件
-                    match = re.match(r'(.+?)(\d+)件', line)
-                    if match:
-                        product_name = match.group(1).strip()
-                        quantity = int(match.group(2))
-                
+                # 使用统一的行解析方法
+                product_name, quantity = self.parse_product_line(line)
+
                 if product_name and quantity:
                     # 标准化商品名称
                     normalized_name = self.normalize_product_name(product_name)
