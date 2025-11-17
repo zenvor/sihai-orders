@@ -17,10 +17,8 @@
         <a-card title="文件上传">
           <a-row :gutter="16">
             <a-col :span="12">
-              <FileUploader
-                accept=".txt"
-                title="订单文件 (order.txt)"
-                @uploaded="handleOrderFileUploaded"
+              <OrderInput
+                @uploaded="handleOrderInputChanged"
               />
             </a-col>
             <a-col :span="12">
@@ -107,12 +105,15 @@ import {
 } from '@ant-design/icons-vue'
 
 import FileUploader from './components/FileUploader.vue'
+import OrderInput from './components/OrderInput.vue'
 import ProcessPanel from './components/ProcessPanel.vue'
 import { startProcess, downloadFile, updateConfig } from './api'
 
 // 状态
 const orderFileId = ref(null)
 const orderFileName = ref('')
+const orderContent = ref(null)
+const orderType = ref(null) // 'file' 或 'text'
 const excelFileId = ref(null)
 const excelFileName = ref('')
 const currentTask = ref(null)
@@ -123,14 +124,35 @@ const apiKey = ref('')
 
 // 计算属性
 const canProcess = computed(() => {
-  return orderFileId.value && excelFileId.value && !processing.value
+  const hasOrder = orderFileId.value || orderContent.value
+  return hasOrder && excelFileId.value && !processing.value
 })
 
-// 文件上传回调
-const handleOrderFileUploaded = (fileInfo) => {
-  orderFileId.value = fileInfo.fileId
-  orderFileName.value = fileInfo.filename
-  message.success(`订单文件上传成功: ${fileInfo.filename}`)
+// 订单输入变化回调
+const handleOrderInputChanged = (info) => {
+  if (info.cleared) {
+    // 清除订单数据
+    orderFileId.value = null
+    orderFileName.value = ''
+    orderContent.value = null
+    orderType.value = null
+    return
+  }
+
+  if (info.type === 'file') {
+    // 文件上传模式
+    orderFileId.value = info.fileId
+    orderFileName.value = info.filename
+    orderContent.value = null
+    orderType.value = 'file'
+    message.success(`订单文件上传成功: ${info.filename}`)
+  } else if (info.type === 'text') {
+    // 文本输入模式
+    orderContent.value = info.content
+    orderFileId.value = null
+    orderFileName.value = ''
+    orderType.value = 'text'
+  }
 }
 
 const handleExcelFileUploaded = (fileInfo) => {
@@ -143,11 +165,21 @@ const handleExcelFileUploaded = (fileInfo) => {
 const startProcessing = async () => {
   try {
     processing.value = true
-    const res = await startProcess({
-      order_file_id: orderFileId.value,
+
+    // 构建请求参数
+    const params = {
       excel_file_id: excelFileId.value,
       api_key: apiKey.value || undefined
-    })
+    }
+
+    // 根据订单类型添加不同的参数
+    if (orderType.value === 'file') {
+      params.order_file_id = orderFileId.value
+    } else if (orderType.value === 'text') {
+      params.order_content = orderContent.value
+    }
+
+    const res = await startProcess(params)
 
     currentTask.value = res.taskId
     taskStatus.value = 'pending'
@@ -171,6 +203,8 @@ const downloadResult = () => {
 const reset = () => {
   orderFileId.value = null
   orderFileName.value = ''
+  orderContent.value = null
+  orderType.value = null
   excelFileId.value = null
   excelFileName.value = ''
   currentTask.value = null
