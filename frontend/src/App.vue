@@ -2,7 +2,7 @@
   <a-layout class="app-layout">
     <a-layout-header class="header">
       <div class="header-content">
-        <h1>🚀 四海订单处理工具</h1>
+        <h1>四海订单处理工具</h1>
         <a-button type="link" @click="showConfigModal = true">
           <template #icon><SettingOutlined /></template>
           设置
@@ -14,7 +14,7 @@
       <a-space direction="vertical" size="large" style="width: 100%">
 
         <!-- 文件上传区域 -->
-        <a-card title="📤 文件上传">
+        <a-card title="文件上传">
           <a-row :gutter="16">
             <a-col :span="12">
               <FileUploader
@@ -64,7 +64,7 @@
         </a-card>
 
         <!-- 处理进度 -->
-        <a-card v-if="currentTask" title="📊 处理进度">
+        <a-card v-if="currentTask" title="处理进度">
           <ProcessPanel :task-id="currentTask" @status-change="handleStatusChange" />
         </a-card>
 
@@ -74,7 +74,7 @@
     <!-- 配置弹窗 -->
     <a-modal
       v-model:open="showConfigModal"
-      title="⚙️ 配置"
+      title="配置"
       @ok="saveConfig"
       ok-text="保存"
       cancel-text="取消"
