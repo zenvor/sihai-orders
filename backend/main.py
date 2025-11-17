@@ -1,7 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Body
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 import shutil
 from pathlib import Path
 import uuid
@@ -17,6 +18,15 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# Pydantic 模型
+class ProcessRequest(BaseModel):
+    """处理任务请求模型"""
+    order_file_id: Optional[str] = None
+    order_content: Optional[str] = None
+    excel_file_id: str
+    api_key: Optional[str] = None
 
 # 创建 FastAPI 应用
 app = FastAPI(
@@ -137,35 +147,68 @@ async def upload_file(file: UploadFile = File(...)):
 
 
 @app.post("/api/process")
-async def start_processing(
-    order_file_id: str = Query(..., description="订单文件ID"),
-    excel_file_id: str = Query(..., description="Excel模板文件ID"),
-    api_key: Optional[str] = Query(None, description="Deepseek API Key (可选)")
-):
+async def start_processing(request: ProcessRequest):
     """
     开始处理任务
 
     Args:
-        order_file_id: 订单文件ID
-        excel_file_id: Excel模板文件ID
-        api_key: Deepseek API Key（可选，如果不提供则使用配置中的）
+        request: 处理请求，包含以下字段：
+            - order_file_id: 订单文件ID（与 order_content 二选一）
+            - order_content: 订单文本内容（与 order_file_id 二选一）
+            - excel_file_id: Excel模板文件ID
+            - api_key: Deepseek API Key（可选，如果不提供则使用配置中的）
 
     Returns:
         任务ID
     """
-    # 查找文件
-    order_file = settings.upload_dir / f"{order_file_id}.txt"
-    excel_file = settings.upload_dir / f"{excel_file_id}.xlsx"
+    # 验证订单来源：必须提供 order_file_id 或 order_content 之一
+    if not request.order_file_id and not request.order_content:
+        raise HTTPException(
+            status_code=400,
+            detail="请提供订单文件ID或订单文本内容"
+        )
 
-    if not order_file.exists():
-        raise HTTPException(status_code=404, detail="订单文件不存在")
+    if request.order_file_id and request.order_content:
+        raise HTTPException(
+            status_code=400,
+            detail="订单文件ID和订单文本内容只能提供其中之一"
+        )
 
+    # 处理订单文件
+    order_file = None
+    temp_order_file = None
+
+    if request.order_file_id:
+        # 使用已上传的文件
+        order_file = settings.upload_dir / f"{request.order_file_id}.txt"
+        if not order_file.exists():
+            raise HTTPException(status_code=404, detail="订单文件不存在")
+    else:
+        # 从文本内容创建临时文件
+        try:
+            temp_file_id = str(uuid.uuid4())
+            temp_order_file = settings.upload_dir / f"{temp_file_id}.txt"
+            temp_order_file.write_text(request.order_content, encoding='utf-8')
+            order_file = temp_order_file
+            logger.info(f"从文本内容创建临时订单文件: {temp_order_file}")
+        except Exception as e:
+            logger.error(f"创建临时订单文件失败: {e}")
+            raise HTTPException(status_code=500, detail=f"创建临时订单文件失败: {str(e)}")
+
+    # 查找 Excel 模板文件
+    excel_file = settings.upload_dir / f"{request.excel_file_id}.xlsx"
     if not excel_file.exists():
+        # 清理临时文件
+        if temp_order_file and temp_order_file.exists():
+            temp_order_file.unlink()
         raise HTTPException(status_code=404, detail="Excel模板文件不存在")
 
     # 使用配置中的 API Key 或传入的 API Key
-    used_api_key = api_key or settings.deepseek_api_key
+    used_api_key = request.api_key or settings.deepseek_api_key
     if not used_api_key:
+        # 清理临时文件
+        if temp_order_file and temp_order_file.exists():
+            temp_order_file.unlink()
         raise HTTPException(
             status_code=400,
             detail="请配置 Deepseek API Key（通过环境变量或请求参数）"
@@ -183,10 +226,14 @@ async def start_processing(
 
         return {
             "taskId": task_id,
-            "message": "任务已启动"
+            "message": "任务已启动",
+            "orderSource": "file" if request.order_file_id else "text"
         }
 
     except Exception as e:
+        # 清理临时文件
+        if temp_order_file and temp_order_file.exists():
+            temp_order_file.unlink()
         logger.error(f"创建任务失败: {e}")
         raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
 

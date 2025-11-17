@@ -42,9 +42,14 @@ export const uploadFile = async (file) => {
 
 /**
  * 开始处理任务
+ * @param {Object} data - 请求数据
+ * @param {string} data.order_file_id - 订单文件ID（与 order_content 二选一）
+ * @param {string} data.order_content - 订单文本内容（与 order_file_id 二选一）
+ * @param {string} data.excel_file_id - Excel模板文件ID
+ * @param {string} data.api_key - Deepseek API Key（可选）
  */
-export const startProcess = async (params) => {
-  return await api.post('/process', null, { params })
+export const startProcess = async (data) => {
+  return await api.post('/process', data)
 }
 
 /**
