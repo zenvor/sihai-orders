@@ -26,13 +26,27 @@ app = FastAPI(
 )
 
 # CORS 配置
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# 根据配置决定是否允许所有来源（适合个人使用）
+if settings.allow_cors_all:
+    # 允许所有来源（推荐用于个人使用、开发和局域网访问）
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # 允许所有来源
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.info("CORS 配置: 允许所有来源访问")
+else:
+    # 仅允许指定来源（用于生产环境）
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.info(f"CORS 配置: 仅允许以下来源 {settings.cors_origins}")
 
 # 初始化任务管理器
 task_manager = TaskManager()

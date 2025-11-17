@@ -50,12 +50,24 @@ class Settings:
         ]
 
         # CORS 配置
-        self.cors_origins = [
+        # 允许所有来源（适合个人使用，如需限制请设置 ALLOW_CORS_ALL=false）
+        self.allow_cors_all = os.getenv('ALLOW_CORS_ALL', 'true').lower() == 'true'
+
+        # 默认允许的来源列表
+        default_origins = [
             "http://localhost:5173",  # Vite 开发服务器
             "http://127.0.0.1:5173",
             "http://localhost:8000",  # 生产环境
-            "http://127.0.0.1:8000"
+            "http://127.0.0.1:8000",
+            "http://localhost:3000",  # 备用端口
+            "http://127.0.0.1:3000"
         ]
+
+        # 从环境变量读取额外的允许来源（逗号分隔）
+        extra_origins = os.getenv('CORS_ORIGINS', '').split(',')
+        extra_origins = [origin.strip() for origin in extra_origins if origin.strip()]
+
+        self.cors_origins = default_origins + extra_origins
 
 
 # 全局配置实例

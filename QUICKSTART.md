@@ -52,6 +52,27 @@ python start_server.py
 - **Web 界面**: http://localhost:8000
 - **API 文档**: http://localhost:8000/docs
 
+### 局域网访问
+
+**已自动配置好跨域访问**，无需额外设置！
+
+1. 启动时使用 `--host 0.0.0.0`：
+   ```bash
+   python start_server.py --host 0.0.0.0
+   ```
+
+2. 在其他设备（手机、平板、其他电脑）访问：
+   ```
+   http://你的IP地址:8000
+   例如：http://192.168.1.100:8000
+   ```
+
+3. 查看你的 IP 地址：
+   - Windows: `ipconfig`
+   - Linux/macOS: `ifconfig` 或 `ip addr`
+
+**详细的跨域配置说明请查看 [CORS.md](CORS.md)**
+
 ## 高级选项
 
 ### 自定义端口
