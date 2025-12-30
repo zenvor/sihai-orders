@@ -199,41 +199,175 @@ class ProductStandardizer:
                 if match:
                     quantity = int(match.group(1))
 
-        # 方式2: 多空格或制表符分隔（需要数字在末尾）
+        # 方式2: 多空格或制表符分隔（支持 "商品名  1 件" 或 "商品名  1" 格式）
         if product_name is None:
-            # 匹配：文本 + 多个空格或制表符 + 数字
-            match = re.match(r'^(.+?)\s{2,}(\d+)$', line)
+            # 匹配：文本 + 多个空格或制表符 + 数字 + 可选的空格和"件"
+            match = re.match(r'^(.+?)\s{2,}(\d+)\s*件?$', line)
             if match:
                 product_name = match.group(1).strip()
                 quantity = int(match.group(2))
             else:
-                # 方式3: 直接跟数字的格式（如 "150g鲜装牛肉丸2件" 或 "150g鲜装牛肉丸2"）
-                match = re.match(r'(.+?)(\d+)件?$', line)
+                # 方式3: 直接跟数字的格式（如 "150g鲜装牛肉丸2件" 或 "150g鲜装牛肉丸2" 或 "150g鲜装牛肉丸2 件"）
+                match = re.match(r'(.+?)(\d+)\s*件?$', line)
                 if match:
                     product_name = match.group(1).strip()
                     quantity = int(match.group(2))
 
         return product_name, quantity
 
-    def extract_all_product_variants(self, parsed_data: List[Dict[str, Any]]) -> set:
+    def parse_product_line_with_ai(self, line: str) -> tuple:
         """
-        提取所有商品变体名称
+        使用 AI 解析无法被本地正则匹配的商品行
+        这是一个 fallback 机制，确保不会遗漏任何商品
+
+        Args:
+            line: 单行数据
+
+        Returns:
+            (商品名, 数量) 元组
+        """
+        try:
+            prompt = f"""请解析以下商品订单行，提取商品名称和数量。
+
+订单行："{line}"
+
+请返回 JSON 格式：
+{{"product_name": "商品名称", "quantity": 数量}}
+
+注意：
+1. 商品名称不要包含数量信息（如"件"、"个"等）
+2. 数量必须是整数
+3. 如果无法解析，返回 {{"product_name": null, "quantity": null}}
+
+只返回 JSON，不要其他说明。"""
+
+            response = self.client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1
+            )
+
+            response_text = response.choices[0].message.content
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if json_match:
+                result = json.loads(json_match.group())
+                product_name = result.get('product_name')
+                quantity = result.get('quantity')
+                if product_name and quantity:
+                    logger.info(f"AI 解析成功: '{line}' => {product_name}, {quantity}")
+                    return product_name, int(quantity)
+
+        except Exception as e:
+            logger.warning(f"AI 解析失败: {e}")
+
+        return None, None
+
+    def smart_parse_product_line(self, line: str, use_ai_fallback: bool = True) -> tuple:
+        """
+        智能解析商品行：优先使用本地解析，失败时使用 AI fallback
+
+        Args:
+            line: 单行数据
+            use_ai_fallback: 是否启用 AI fallback
+
+        Returns:
+            (商品名, 数量) 元组
+        """
+        # 先尝试本地解析
+        product_name, quantity = self.parse_product_line(line)
+
+        # 如果本地解析失败且启用了 AI fallback，则调用 AI
+        if product_name is None and use_ai_fallback and line.strip():
+            logger.info(f"本地解析失败，尝试 AI 解析: '{line}'")
+            product_name, quantity = self.parse_product_line_with_ai(line)
+
+        return product_name, quantity
+
+    def _batch_parse_with_ai(self, lines: List[str]) -> List[str]:
+        """
+        批量使用 AI 解析多行商品数据（减少 API 调用次数）
+
+        Args:
+            lines: 需要解析的行列表
+
+        Returns:
+            解析出的商品名称列表
+        """
+        if not lines:
+            return []
+
+        try:
+            # 构建批量解析的 prompt
+            lines_text = "\n".join([f"{i+1}. {line}" for i, line in enumerate(lines)])
+            prompt = f"""请解析以下商品订单行，提取每行的商品名称。
+
+订单行列表：
+{lines_text}
+
+请返回 JSON 格式的数组，每个元素对应一行的解析结果：
+[
+    {{"line": 1, "product_name": "商品名称1", "quantity": 数量1}},
+    {{"line": 2, "product_name": "商品名称2", "quantity": 数量2}}
+]
+
+注意：
+1. 商品名称不要包含数量信息（如"件"、"个"等）
+2. 数量必须是整数
+3. 如果某行无法解析，对应的 product_name 和 quantity 设为 null
+
+只返回 JSON 数组，不要其他说明。"""
+
+            response = self.client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1
+            )
+
+            response_text = response.choices[0].message.content
+            # 提取 JSON 数组
+            json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
+            if json_match:
+                results = json.loads(json_match.group())
+                product_names = []
+                for result in results:
+                    product_name = result.get('product_name')
+                    if product_name:
+                        product_names.append(product_name)
+                        logger.info(f"AI 批量解析成功: '{product_name}'")
+                return product_names
+
+        except Exception as e:
+            logger.warning(f"AI 批量解析失败: {e}")
+
+        return []
+
+    def extract_all_product_variants(self, parsed_data: List[Dict[str, Any]], use_ai_fallback: bool = True) -> set:
+        """
+        提取所有商品变体名称（支持 AI fallback）
 
         Args:
             parsed_data: 解析后的数据
+            use_ai_fallback: 是否启用 AI fallback 解析
 
         Returns:
             所有商品变体的集合
         """
         all_products = set()
+        failed_lines = []  # 收集本地解析失败的行
 
+        # 第一轮：使用本地解析
         for entry in parsed_data:
             lines = entry['data'].strip().split('\n')
             for line in lines:
-                # 使用通用的行解析方法
+                line = line.strip()
+                if not line:
+                    continue
+
+                # 使用本地解析
                 product_name, _ = self.parse_product_line(line)
 
                 if not product_name:
+                    failed_lines.append(line)
                     continue
 
                 # 标准化商品名称
@@ -255,6 +389,15 @@ class ProductStandardizer:
                 name_clean = re.sub(r'^\d+g', '', name_without_fresh)
                 if name_clean != normalized_name and name_clean != name_without_weight:
                     all_products.add(name_clean)
+
+        # 第二轮：对失败的行使用 AI fallback（批量处理以减少 API 调用）
+        if use_ai_fallback and failed_lines:
+            logger.info(f"本地解析失败 {len(failed_lines)} 行，尝试 AI 批量解析...")
+            ai_results = self._batch_parse_with_ai(failed_lines)
+            for product_name in ai_results:
+                if product_name:
+                    normalized_name = self.normalize_product_name(product_name)
+                    all_products.add(normalized_name)
 
         return all_products
 
@@ -356,8 +499,8 @@ class ProductStandardizer:
             shop_products = {}
 
             for line in lines:
-                # 使用统一的行解析方法
-                product_name, quantity = self.parse_product_line(line)
+                # 使用智能解析（本地优先，AI fallback）
+                product_name, quantity = self.smart_parse_product_line(line, use_ai_fallback=True)
 
                 if product_name and quantity:
                     # 标准化商品名称
