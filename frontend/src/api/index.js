@@ -62,9 +62,27 @@ export const getTaskStatus = async (taskId) => {
 /**
  * 下载结果文件
  */
-export const downloadFile = (taskId) => {
-  const url = `${API_BASE}/download/${taskId}`
-  window.open(url, '_blank')
+export const downloadFile = async (taskId) => {
+  try {
+    const blob = await api.get(`/download/${taskId}`, {
+      responseType: 'blob'
+    })
+    
+    const url = window.URL.createObjectURL(new Blob([blob]))
+    const link = document.createElement('a')
+    link.href = url
+    // 手动指定文件名，确保格式正确
+    link.setAttribute('download', `订单处理结果_${taskId.substring(0, 8)}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Download failed:', error)
+    // 降级处理
+    const url = `${API_BASE}/download/${taskId}`
+    window.open(url, '_blank')
+  }
 }
 
 /**
