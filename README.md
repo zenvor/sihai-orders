@@ -13,21 +13,28 @@
    - 如果没有API密钥，请到 [Deepseek官网](https://platform.deepseek.com/) 注册获取
 
 ### 第二步：运行程序
-**Windows用户**：
-- 双击 `run.bat` 文件
-- 如果提示安全警告，点击"运行"
-- 如果无法运行，右键选择"以管理员身份运行"
 
-**Mac用户**：
-- 双击 `run.sh` 文件
-- 如果提示"无法打开"或权限问题，打开终端执行：
+#### 1. 命令行模式 (CLI)
+适合直接处理本地文件。
+- **Windows**: 双击 `run.bat`
+- **Mac/Linux**: 
   ```bash
   chmod +x run.sh
   ./run.sh
   ```
 
+#### 2. 网页模式 (Server)
+提供可视化界面，支持文件上传和下载。
+- **Windows**: 双击 `start_server.bat`
+- **Mac/Linux**: 
+  ```bash
+  chmod +x start_server.sh
+  ./start_server.sh
+  ```
+- **访问地址**: 启动后在浏览器打开 [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
 ### 第三步：等待完成
-程序会自动处理数据并更新Excel文件，完成后按回车键退出。
+命令行模式下程序会自动处理并更新 Excel；网页模式下请根据页面提示上传文件。
 
 ## 📝 order.txt 文件格式
 
