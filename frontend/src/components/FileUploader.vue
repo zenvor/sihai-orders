@@ -1,12 +1,12 @@
 <template>
   <a-upload-dragger
+    v-model:file-list="fileList"
     :accept="accept"
     :before-upload="beforeUpload"
     :custom-request="customUpload"
-    :file-list="[]"
-    :show-upload-list="false"
     :max-count="1"
     class="custom-uploader"
+    @change="handleChange"
   >
     <div class="upload-content">
       <p class="upload-icon-wrapper">
@@ -40,10 +40,20 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['uploaded'])
+const emit = defineEmits(['uploaded', 'removed'])
 
+const fileList = ref([])
 const uploadedFileName = ref('')
 const uploading = ref(false)
+
+// 处理文件列表变化（删除文件时）
+const handleChange = (info) => {
+  // 当文件被删除时（status 为 removed）
+  if (info.file.status === 'removed') {
+    uploadedFileName.value = ''
+    emit('removed')
+  }
+}
 
 const beforeUpload = (file) => {
   const extension = props.accept.replace('.', '')
@@ -62,11 +72,15 @@ const beforeUpload = (file) => {
   return isValid
 }
 
-const customUpload = async ({ file, onSuccess, onError }) => {
+const customUpload = async ({ file, onSuccess, onError, onProgress }) => {
   try {
     uploading.value = true
 
-    const res = await uploadFile(file)
+    const res = await uploadFile(file, (progressEvent) => {
+      // 计算上传进度百分比
+      const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+      onProgress({ percent })
+    })
 
     // 保存上传的文件名
     uploadedFileName.value = res.filename

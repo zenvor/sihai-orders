@@ -7,6 +7,7 @@
           accept=".txt"
           title="订单文件 (order.txt)"
           @uploaded="handleFileUploaded"
+          @removed="handleFileRemoved"
           class="inner-uploader"
         />
       </div>
@@ -104,6 +105,13 @@ const handleFileUploaded = (info) => {
     fileId: info.fileId,
     filename: info.filename
   })
+}
+
+// 处理文件删除
+const handleFileRemoved = () => {
+  fileUploaded.value = false
+  fileInfo.value = null
+  emit('uploaded', { cleared: true })
 }
 
 // 处理文本变化

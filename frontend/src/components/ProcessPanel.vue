@@ -117,6 +117,8 @@ const stepStatus = computed(() => {
 
 const getStepDesc = (step) => {
   const current = currentStep.value
+  // 如果任务已完成，所有步骤都显示"已完成"
+  if (taskInfo.value.status === 'completed') return '已完成'
   if (current > step) return '已完成'
   if (current === step) return '进行中...'
   return '等待中'

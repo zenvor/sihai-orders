@@ -81,6 +81,16 @@ class TaskManager:
 
         def progress_callback(percent: int, message: str):
             """进度回调函数"""
+            # 详细日志：只添加日志，不更新进度和状态
+            if percent == -2:
+                log_entry = {
+                    "time": datetime.now().strftime("%H:%M:%S"),
+                    "message": message,
+                    "type": "detail"
+                }
+                task["logs"].append(log_entry)
+                return
+
             task["progress"] = percent
             task["message"] = message
 

@@ -47,9 +47,20 @@ class ProductStandardizer:
             "四海150g鲜装牛肉丸"
         ]
 
-    def _update_progress(self, percent: int, message: str):
-        """更新处理进度"""
-        logger.info(f"[{percent}%] {message}")
+    def _update_progress(self, percent: int, message: str, is_detail: bool = False):
+        """
+        更新处理进度
+        
+        Args:
+            percent: 进度百分比，-2 表示详细日志
+            message: 消息内容
+            is_detail: 是否为详细日志
+        """
+        if not is_detail:
+            logger.info(f"[{percent}%] {message}")
+        else:
+            logger.info(message)
+        
         if self.progress_callback:
             try:
                 self.progress_callback(percent, message)
@@ -524,6 +535,11 @@ class ProductStandardizer:
                 'products': shop_products
             })
 
+            # 输出该店铺的结构化数据到日志
+            if shop_products:
+                products_str = ", ".join([f"{name}:{qty}件" for name, qty in shop_products.items()])
+                self._update_progress(-2, f"📦 {shop_name}: {products_str}", is_detail=True)
+
         return standardized_data
 
     def update_excel_file(self, file_path: str, standardized_data: List[Dict[str, Any]]) -> str:
@@ -587,7 +603,9 @@ class ProductStandardizer:
                             break
 
                 if target_column_index is None:
-                    logger.warning(f"未找到店铺 '{shop_name}' (清理后: '{clean_shop_name}') 对应的列")
+                    warning_msg = f"未找到店铺 '{shop_name}' (清理后: '{clean_shop_name}') 对应的列"
+                    logger.warning(warning_msg)
+                    self._update_progress(-2, f"⚠️ {warning_msg}", is_detail=True)
                     continue
 
                 # 更新商品数量
@@ -599,12 +617,16 @@ class ProductStandardizer:
                         if cell_value and product_name in str(cell_value):
                             # 只更新数值，不改变格式
                             worksheet.cell(row=row, column=target_column_index).value = quantity
-                            logger.info(f"更新 {clean_shop_name} - {product_name}: {quantity}件")
+                            update_msg = f"更新 {clean_shop_name} - {product_name}: {quantity}件"
+                            logger.info(update_msg)
+                            self._update_progress(-2, update_msg, is_detail=True)
                             product_found = True
                             break
 
                     if not product_found:
-                        logger.warning(f"未找到商品: {product_name}")
+                        warning_msg = f"未找到商品: {product_name}"
+                        logger.warning(warning_msg)
+                        self._update_progress(-2, f"⚠️ {warning_msg}", is_detail=True)
 
             # 保存工作簿，保持原有格式
             workbook.save(file_path)

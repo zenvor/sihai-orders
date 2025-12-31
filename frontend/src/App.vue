@@ -39,6 +39,7 @@
                     accept=".xlsx"
                     title="上传 Excel 模板"
                     @uploaded="handleExcelFileUploaded"
+                    @removed="handleExcelFileRemoved"
                   />
                 </div>
               </a-card>
@@ -188,6 +189,12 @@ const handleExcelFileUploaded = (fileInfo) => {
   message.success(`Excel 模板上传成功: ${fileInfo.filename}`)
 }
 
+// 处理 Excel 文件删除
+const handleExcelFileRemoved = () => {
+  excelFileId.value = null
+  excelFileName.value = ''
+}
+
 // 开始处理
 const startProcessing = async () => {
   try {
@@ -211,10 +218,10 @@ const startProcessing = async () => {
     currentTask.value = res.taskId
     taskStatus.value = 'pending'
     message.success('任务已启动')
+    // 注意：processing 状态在 handleStatusChange 中根据任务完成状态更新
   } catch (error) {
     message.error(error.message || '启动任务失败')
-  } finally {
-    processing.value = false
+    processing.value = false  // 只有出错时才立即恢复
   }
 }
 
@@ -252,6 +259,10 @@ const saveConfig = async () => {
 
 const handleStatusChange = (status) => {
   taskStatus.value = status
+  // 任务完成或失败时，取消 loading 状态
+  if (status === 'completed' || status === 'failed') {
+    processing.value = false
+  }
 }
 </script>
 

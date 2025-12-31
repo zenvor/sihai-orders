@@ -30,13 +30,16 @@ api.interceptors.response.use(
 
 /**
  * 上传文件
+ * @param {File} file - 要上传的文件
+ * @param {Function} onProgress - 上传进度回调函数，接收 progressEvent 参数
  */
-export const uploadFile = async (file) => {
+export const uploadFile = async (file, onProgress) => {
   const formData = new FormData()
   formData.append('file', file)
 
   return await api.post('/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: onProgress
   })
 }
 
