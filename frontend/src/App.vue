@@ -22,11 +22,14 @@
               />
             </a-col>
             <a-col :span="12">
-              <FileUploader
-                accept=".xlsx"
-                title="Excel 模板"
-                @uploaded="handleExcelFileUploaded"
-              />
+              <div class="right-column-container">
+                <div class="spacer"></div>
+                <FileUploader
+                  accept=".xlsx"
+                  title="Excel 模板"
+                  @uploaded="handleExcelFileUploaded"
+                />
+              </div>
             </a-col>
           </a-row>
         </a-card>
@@ -259,6 +262,17 @@ const handleStatusChange = (status) => {
   padding: 24px;
   max-width: 1200px;
   margin: 0 auto;
+  width: 100%;
+}
+
+.right-column-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.spacer {
+  height: 48px; /* Matches the height of the toggle section in OrderInput (32px + 16px padding) */
   width: 100%;
 }
 </style>
