@@ -83,17 +83,14 @@ const customUpload = async ({ file, onSuccess, onError }) => {
 </script>
 
 <style scoped>
+/* Minimal overrides to ensure height */
 .custom-uploader {
-  height: 200px; /* Slight increase for better spacing */
-  border-radius: 12px;
-  overflow: hidden;
+  height: 100%;
+  min-height: 200px;
+  width: 100%;
   background: #fafafa;
-  transition: all 0.3s ease;
-}
-
-.custom-uploader:hover {
-  border-color: #1890ff;
-  background: #f0f5ff;
+  display: flex;
+  flex-direction: column;
 }
 
 .upload-content {
@@ -102,21 +99,14 @@ const customUpload = async ({ file, onSuccess, onError }) => {
   justify-content: center;
   align-items: center;
   height: 100%;
-  gap: 12px;
-}
-
-.upload-icon-wrapper {
-  margin-bottom: 0;
+  width: 100%;
+  gap: 16px;
+  padding: 20px;
 }
 
 .upload-icon {
   font-size: 48px;
-  color: #bfbfbf;
-  transition: color 0.3s;
-}
-
-.custom-uploader:hover .upload-icon {
-  color: #40a9ff;
+  color: #1890ff;
 }
 
 .success-icon {
@@ -129,13 +119,11 @@ const customUpload = async ({ file, onSuccess, onError }) => {
   color: #333;
   margin: 0;
   font-weight: 500;
-  padding: 0 16px;
-  word-break: break-all;
 }
 
 .upload-hint {
-  font-size: 13px;
-  color: #888;
+  font-size: 14px;
+  color: #00000073;
   margin: 0;
 }
 </style>
