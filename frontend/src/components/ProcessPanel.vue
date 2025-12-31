@@ -1,43 +1,48 @@
 <template>
   <div class="process-panel">
     <!-- 进度条 -->
-    <a-progress
-      :percent="taskInfo.progress"
-      :status="progressStatus"
-      stroke-color="#1890ff"
-      :show-info="true"
-    />
+    <div class="progress-section">
+      <a-progress
+        :percent="taskInfo.progress"
+        :status="progressStatus"
+        stroke-color="#1890ff"
+        :stroke-width="12"
+        :show-info="true"
+        class="custom-progress"
+      />
+    </div>
 
-    <a-divider>当前状态</a-divider>
+    <a-divider style="margin: 20px 0;">当前状态</a-divider>
 
     <!-- 状态显示 -->
     <a-alert
       :type="alertType"
       :message="taskInfo.message"
       show-icon
-      style="margin-bottom: 16px"
+      class="status-alert"
     />
 
     <!-- 步骤显示 -->
-    <a-steps
-      :current="currentStep"
-      :status="stepStatus"
-      size="small"
-      direction="vertical"
-      style="margin-top: 24px"
-    >
-      <a-step title="读取订单数据" :description="getStepDesc(0)" />
-      <a-step title="解析数据" :description="getStepDesc(1)" />
-      <a-step title="AI 商品映射" :description="getStepDesc(2)" />
-      <a-step title="标准化数据" :description="getStepDesc(3)" />
-      <a-step title="写入 Excel" :description="getStepDesc(4)" />
-      <a-step title="处理完成" :description="getStepDesc(5)" />
-    </a-steps>
+    <div class="steps-container">
+      <a-steps
+        :current="currentStep"
+        :status="stepStatus"
+        size="small"
+        direction="vertical"
+      >
+        <a-step title="读取订单数据" :description="getStepDesc(0)" />
+        <a-step title="解析数据" :description="getStepDesc(1)" />
+        <a-step title="AI 商品映射" :description="getStepDesc(2)" />
+        <a-step title="标准化数据" :description="getStepDesc(3)" />
+        <a-step title="写入 Excel" :description="getStepDesc(4)" />
+        <a-step title="处理完成" :description="getStepDesc(5)" />
+      </a-steps>
+    </div>
 
-    <a-divider>处理日志</a-divider>
+    <a-divider style="margin: 20px 0;">处理日志</a-divider>
 
     <!-- 日志显示 -->
-    <div class="log-container">
+    <div class="log-container custom-scrollbar">
       <a-timeline mode="left">
         <a-timeline-item
           v-for="(log, index) in taskInfo.logs"
@@ -48,10 +53,12 @@
             <span v-if="log.message.includes('✅')">✅</span>
             <span v-else-if="log.message.includes('❌')">❌</span>
             <span v-else-if="log.message.includes('🔄')">🔄</span>
-            <ClockCircleOutlined v-else />
+            <ClockCircleOutlined v-else style="font-size: 14px;" />
           </template>
-          <span class="log-time">{{ log.time }}</span>
-          <span class="log-message">{{ log.message }}</span>
+          <div class="log-item">
+            <span class="log-time">{{ log.time }}</span>
+            <span class="log-message" :class="{'error-text': log.message.includes('失败') || log.message.includes('❌')}">{{ log.message }}</span>
+          </div>
         </a-timeline-item>
       </a-timeline>
     </div>
@@ -168,24 +175,71 @@ watch(() => props.taskId, () => {
 
 <style scoped>
 .process-panel {
-  padding: 16px 0;
+  padding: 8px 0;
+}
+
+.progress-section {
+  padding: 0 12px;
+}
+
+.status-alert {
+  border-radius: 8px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.steps-container {
+  background: #fafafa;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
 }
 
 .log-container {
   max-height: 400px;
   overflow-y: auto;
-  padding: 16px;
-  background: #fafafa;
-  border-radius: 4px;
+  padding: 20px;
+  background: #1e1e1e; /* Dark terminal-like background for logs is often preferred by devs, or soft gray. Let's do Soft Gray/Code block style */
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+}
+
+.log-item {
+  display: flex;
+  flex-direction: column;
 }
 
 .log-time {
   color: #999;
-  margin-right: 12px;
-  font-family: monospace;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 2px;
 }
 
 .log-message {
   color: #333;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.error-text {
+  color: #ff4d4f;
+  font-weight: 500;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 </style>

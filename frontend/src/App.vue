@@ -2,8 +2,13 @@
   <a-layout class="app-layout">
     <a-layout-header class="header">
       <div class="header-content">
-        <h1>四海订单处理工具</h1>
-        <a-button type="link" @click="showConfigModal = true">
+        <div class="brand">
+          <div class="logo-icon">
+            <CloudServerOutlined />
+          </div>
+          <h1>四海订单处理工具</h1>
+        </div>
+        <a-button type="text" class="settings-btn" @click="showConfigModal = true">
           <template #icon><SettingOutlined /></template>
           设置
         </a-button>
@@ -11,65 +16,82 @@
     </a-layout-header>
 
     <a-layout-content class="content">
-      <a-space direction="vertical" size="large" style="width: 100%">
+      <div class="content-wrapper">
+        <a-space direction="vertical" size="large" style="width: 100%">
 
-        <!-- 文件上传区域 -->
-        <a-card title="文件上传">
-          <a-row :gutter="16">
-            <a-col :span="12">
+          <!-- 文件上传区域 -->
+          <a-card class="glass-card" :bordered="false">
+            <template #title>
+              <div class="card-title">
+                <FileTextOutlined class="title-icon" />
+                <span>文件上传</span>
+              </div>
+            </template>
+            <div class="upload-section">
               <OrderInput
                 @uploaded="handleOrderInputChanged"
               />
-            </a-col>
-            <a-col :span="12">
-              <div class="right-column-container">
-                <div class="spacer"></div>
-                <FileUploader
-                  accept=".xlsx"
-                  title="Excel 模板"
-                  @uploaded="handleExcelFileUploaded"
-                />
+              <FileUploader
+                accept=".xlsx"
+                title="Excel 模板"
+                @uploaded="handleExcelFileUploaded"
+              />
+            </div>
+          </a-card>
+
+          <!-- 操作按钮 -->
+          <a-card class="glass-card action-card" :bordered="false">
+            <div class="action-buttons">
+              <a-button
+                type="primary"
+                size="large"
+                class="main-action-btn"
+                :disabled="!canProcess"
+                :loading="processing"
+                @click="startProcessing"
+              >
+                <template #icon><PlayCircleOutlined /></template>
+                开始处理
+              </a-button>
+
+              <div class="secondary-actions">
+                <a-button
+                  size="large"
+                  class="secondary-btn"
+                  :disabled="!currentTask || taskStatus !== 'completed'"
+                  @click="downloadResult"
+                >
+                  <template #icon><DownloadOutlined /></template>
+                  下载结果
+                </a-button>
+
+                <a-button 
+                  size="large" 
+                  class="secondary-btn danger-hover"
+                  @click="reset"
+                >
+                  <template #icon><ClearOutlined /></template>
+                  清空
+                </a-button>
               </div>
-            </a-col>
-          </a-row>
-        </a-card>
+            </div>
+          </a-card>
 
-        <!-- 操作按钮 -->
-        <a-card>
-          <a-space size="middle">
-            <a-button
-              type="primary"
-              size="large"
-              :disabled="!canProcess"
-              :loading="processing"
-              @click="startProcessing"
-            >
-              <template #icon><PlayCircleOutlined /></template>
-              开始处理
-            </a-button>
+          <!-- 处理进度 -->
+          <transition name="fade">
+            <a-card v-if="currentTask" class="glass-card" :bordered="false">
+              <template #title>
+                <div class="card-title">
+                  <SyncOutlined class="title-icon" :spin="taskStatus === 'processing'" />
+                  <span>处理进度</span>
+                </div>
+              </template>
+              <ProcessPanel :task-id="currentTask" @status-change="handleStatusChange" />
+            </a-card>
+          </transition>
 
-            <a-button
-              size="large"
-              :disabled="!currentTask || taskStatus !== 'completed'"
-              @click="downloadResult"
-            >
-              <template #icon><DownloadOutlined /></template>
-              下载结果
-            </a-button>
-
-            <a-button size="large" @click="reset">
-              <template #icon><ClearOutlined /></template>
-              清空
-            </a-button>
-          </a-space>
-        </a-card>
-
-        <!-- 处理进度 -->
-        <a-card v-if="currentTask" title="处理进度">
-          <ProcessPanel :task-id="currentTask" @status-change="handleStatusChange" />
-        </a-card>
-
-      </a-space>
+        </a-space>
+      </div>
     </a-layout-content>
 
     <!-- 配置弹窗 -->
@@ -79,12 +101,14 @@
       @ok="saveConfig"
       ok-text="保存"
       cancel-text="取消"
+      class="custom-modal"
     >
       <a-form layout="vertical">
         <a-form-item label="Deepseek API Key">
           <a-input-password
             v-model:value="apiKey"
             placeholder="sk-xxxxxxxxxxxxx"
+            class="custom-input"
           />
           <template #extra>
             <a-typography-text type="secondary">
@@ -104,7 +128,10 @@ import {
   SettingOutlined,
   PlayCircleOutlined,
   DownloadOutlined,
-  ClearOutlined
+  ClearOutlined,
+  CloudServerOutlined,
+  FileTextOutlined,
+  SyncOutlined
 } from '@ant-design/icons-vue'
 
 import FileUploader from './components/FileUploader.vue'
@@ -233,46 +260,188 @@ const handleStatusChange = (status) => {
 </script>
 
 <style scoped>
+/* 全局布局优化 */
 .app-layout {
   min-height: 100vh;
-  background: #f0f2f5;
+  /* 柔和的渐变背景 */
+  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* 顶部导航栏 */
 .header {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 64px;
+  line-height: 64px;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
+  height: 100%;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  font-size: 24px;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
 }
 
 .header h1 {
   margin: 0;
-  color: #1890ff;
-  font-size: 24px;
+  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
+.settings-btn {
+  color: #555;
+  font-size: 15px;
+  border-radius: 6px;
+}
+
+.settings-btn:hover {
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* 主要内容区域 */
 .content {
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 32px 24px;
   width: 100%;
 }
 
-.right-column-container {
+.content-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 玻璃拟态卡片 */
+.glass-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.03);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+
+.card-title {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.title-icon {
+  color: #1890ff;
+}
+
+/* 操作按钮区域 */
+.action-card :deep(.ant-card-body) {
+  padding: 24px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
-.spacer {
-  height: 48px; /* Matches the height of the toggle section in OrderInput (32px + 16px padding) */
+.secondary-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.main-action-btn {
+  height: 48px;
+  padding: 0 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 24px;
+  background: linear-gradient(90deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+  box-shadow: 0 4px 14px 0 rgba(24, 144, 255, 0.39);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.main-action-btn:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(24, 144, 255, 0.23);
+}
+
+.main-action-btn:disabled {
+  background: #f5f5f5;
+  color: rgba(0, 0, 0, 0.25);
+  box-shadow: none;
+}
+
+.secondary-btn {
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.secondary-btn:hover:not(:disabled) {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.danger-hover:hover {
+  border-color: #ff4d4f;
+  color: #ff4d4f;
+}
+
+/* 布局辅助 */
+/* 上传区域垂直布局 */
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   width: 100%;
+}
+
+/* 动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

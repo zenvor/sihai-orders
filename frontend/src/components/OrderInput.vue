@@ -6,61 +6,63 @@
         v-model:value="inputMode"
         :options="inputModeOptions"
         @change="handleModeChange"
+        block
       />
     </div>
 
-    <!-- 文件上传模式 -->
-    <div v-show="inputMode === 'file'" class="input-section">
-      <FileUploader
-        accept=".txt"
-        title="订单文件 (order.txt)"
-        @uploaded="handleFileUploaded"
-      />
-    </div>
+    <!-- 内容区域 -->
+    <div class="content-area">
+      <transition name="fade-slide" mode="out-in">
+        <div v-if="inputMode === 'file'" class="input-section" key="file">
+          <FileUploader
+            accept=".txt"
+            title="订单文件 (order.txt)"
+            @uploaded="handleFileUploaded"
+          />
+        </div>
 
-    <!-- 文本输入模式 -->
-    <div v-show="inputMode === 'text'" class="input-section">
-      <a-textarea
-        v-model:value="orderText"
-        placeholder="请输入订单内容，格式如下：&#10;&#10;店铺名称1:&#10;商品名称1:数量1件&#10;商品名称2:数量2件&#10;&#10;店铺名称2:&#10;商品名称3:数量3件"
-        :rows="10"
-        :maxlength="50000"
-        show-count
-        class="order-textarea"
-        @change="handleTextChange"
-      />
-      <div class="textarea-actions">
-        <a-space>
-          <a-button
-            type="primary"
-            size="small"
-            :disabled="!orderText.trim()"
-            @click="confirmTextInput"
-          >
-            <template #icon><CheckOutlined /></template>
-            确认
-          </a-button>
-          <a-button
-            size="small"
-            @click="clearTextInput"
-          >
-            <template #icon><ClearOutlined /></template>
-            清空
-          </a-button>
-        </a-space>
-      </div>
-      <div v-if="textConfirmed" class="text-confirmed-status">
-        <check-circle-outlined style="color: #52c41a; margin-right: 8px" />
-        <span>订单内容已确认 ({{ orderText.length }} 字符)</span>
-      </div>
+        <div v-else-if="inputMode === 'text'" class="input-section" key="text">
+          <a-textarea
+            v-model:value="orderText"
+            placeholder="请输入订单内容，格式如下：&#10;&#10;店铺名称1:&#10;商品名称1:数量1件&#10;商品名称2:数量2件&#10;&#10;店铺名称2:&#10;商品名称3:数量3件"
+            :rows="8"
+            :maxlength="50000"
+            show-count
+            @change="handleTextChange"
+            style="resize: none; font-family: monospace;"
+          />
+          
+          <div class="textarea-actions">
+            <a-button
+              type="primary"
+              :disabled="!orderText.trim()"
+              @click="confirmTextInput"
+            >
+              <template #icon><CheckOutlined /></template>
+              确认
+            </a-button>
+            <a-button
+              @click="clearTextInput"
+            >
+              <template #icon><ClearOutlined /></template>
+              清空
+            </a-button>
+          </div>
+          
+          <div v-if="textConfirmed" class="text-confirmed-status">
+            <check-circle-filled style="color: #52c41a; font-size: 16px;" />
+            <span class="confirmed-text">订单内容已确认 ({{ orderText.length }} 字符)</span>
+          </div>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { message } from 'ant-design-vue'
-import { CheckOutlined, ClearOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import { CheckOutlined, ClearOutlined, CheckCircleFilled } from '@ant-design/icons-vue'
 import FileUploader from './FileUploader.vue'
 
 const emit = defineEmits(['uploaded'])
@@ -68,8 +70,8 @@ const emit = defineEmits(['uploaded'])
 // 输入模式：file（文件上传）或 text（文本输入）
 const inputMode = ref('file')
 const inputModeOptions = [
-  { label: '📁 文件上传', value: 'file' },
-  { label: '✏️ 文本输入', value: 'text' }
+  { label: '文件上传', value: 'file' },
+  { label: '文本输入', value: 'text' }
 ]
 
 // 文本输入模式的状态
@@ -83,12 +85,9 @@ const fileInfo = ref(null)
 // 处理模式切换
 const handleModeChange = (value) => {
   if (value === 'file' && textConfirmed.value) {
-    // 从文本模式切换到文件模式，清除文本输入状态
     message.info('已切换到文件上传模式')
-    // 发送一个清除事件，让父组件知道需要清除订单数据
     emit('uploaded', { cleared: true })
   } else if (value === 'text' && fileUploaded.value) {
-    // 从文件模式切换到文本模式，清除文件上传状态
     message.info('已切换到文本输入模式')
     emit('uploaded', { cleared: true })
     fileUploaded.value = false
@@ -100,10 +99,8 @@ const handleModeChange = (value) => {
 const handleFileUploaded = (info) => {
   fileUploaded.value = true
   fileInfo.value = info
-  // 清除文本输入状态
   textConfirmed.value = false
   orderText.value = ''
-  // 向上传递文件信息
   emit('uploaded', {
     type: 'file',
     fileId: info.fileId,
@@ -113,7 +110,6 @@ const handleFileUploaded = (info) => {
 
 // 处理文本变化
 const handleTextChange = () => {
-  // 如果用户修改了文本，取消确认状态
   if (textConfirmed.value) {
     textConfirmed.value = false
     emit('uploaded', { cleared: true })
@@ -128,11 +124,9 @@ const confirmTextInput = () => {
   }
 
   textConfirmed.value = true
-  // 清除文件上传状态
   fileUploaded.value = false
   fileInfo.value = null
 
-  // 向上传递文本内容
   emit('uploaded', {
     type: 'text',
     content: orderText.value
@@ -155,28 +149,32 @@ const clearTextInput = () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%;
 }
 
 .input-mode-toggle {
+  margin-bottom: 4px;
+}
+
+/* Ensure content area allows child to fill it */
+.content-area {
+  flex: 1;
   display: flex;
-  justify-content: center;
-  padding: 8px 0;
+  flex-direction: column;
 }
 
 .input-section {
-  min-height: 188px;
-}
-
-.order-textarea {
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.6;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .textarea-actions {
-  margin-top: 12px;
+  margin-top: 32px;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
 }
 
 .text-confirmed-status {
@@ -188,6 +186,22 @@ const clearTextInput = () => {
   color: #52c41a;
   display: flex;
   align-items: center;
-  font-size: 14px;
+  gap: 8px;
+}
+
+/* Animations */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s ease-in-out;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

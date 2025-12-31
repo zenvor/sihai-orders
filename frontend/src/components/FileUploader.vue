@@ -6,25 +6,27 @@
     :file-list="[]"
     :show-upload-list="false"
     :max-count="1"
-    class="fixed-height-uploader"
+    class="custom-uploader"
   >
-    <p class="ant-upload-drag-icon">
-      <inbox-outlined v-if="!uploadedFileName"></inbox-outlined>
-      <check-circle-outlined v-else style="color: #52c41a"></check-circle-outlined>
-    </p>
-    <p class="ant-upload-text">
-      {{ uploadedFileName ? uploadedFileName : title }}
-    </p>
-    <p class="ant-upload-hint">
-      {{ uploadedFileName ? '点击重新上传' : '点击或拖拽文件到此区域上传' }}
-    </p>
+    <div class="upload-content">
+      <p class="upload-icon-wrapper">
+        <inbox-outlined v-if="!uploadedFileName" class="upload-icon" />
+        <check-circle-filled v-else class="success-icon" />
+      </p>
+      <p class="upload-text">
+        {{ uploadedFileName ? uploadedFileName : title }}
+      </p>
+      <p class="upload-hint">
+        {{ uploadedFileName ? '点击重新上传' : '点击或拖拽文件到此区域上传' }}
+      </p>
+    </div>
   </a-upload-dragger>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { message } from 'ant-design-vue'
-import { InboxOutlined, CheckCircleOutlined } from '@ant-design/icons-vue'
+import { InboxOutlined, CheckCircleFilled } from '@ant-design/icons-vue'
 import { uploadFile } from '../api'
 
 const props = defineProps({
@@ -81,37 +83,80 @@ const customUpload = async ({ file, onSuccess, onError }) => {
 </script>
 
 <style scoped>
-.fixed-height-uploader {
-  height: 188px;
+.custom-uploader {
+  height: 200px; /* Slight increase for better spacing */
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.custom-uploader:hover {
+  border-color: #1890ff;
+  background: #f0f5ff;
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  gap: 12px;
+}
+
+.upload-icon-wrapper {
+  margin-bottom: 0;
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: #bfbfbf;
+  transition: color 0.3s;
+}
+
+.custom-uploader:hover .upload-icon {
+  color: #40a9ff;
+}
+
+.success-icon {
+  font-size: 48px;
+  color: #52c41a;
+}
+
+.upload-text {
+  font-size: 16px;
+  color: #333;
+  margin: 0;
+  font-weight: 500;
+  padding: 0 16px;
+  word-break: break-all;
+}
+
+.upload-hint {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
 }
 </style>
 
 <style>
-/* 确保上传区域固定高度 */
-.fixed-height-uploader .ant-upload {
-  height: 188px !important;
-  display: flex !important;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+/* Override Ant Design styles specifically for this uploader */
+.custom-uploader .ant-upload-drag {
+  border-radius: 12px !important;
+  border: 2px dashed #d9d9d9 !important;
+  background: #fafafa !important;
+  transition: border-color 0.3s, background 0.3s !important;
 }
 
-.ant-upload-drag-icon {
-  font-size: 48px;
-  color: #1890ff;
-  margin-bottom: 8px;
+.custom-uploader .ant-upload-drag:hover {
+  border-color: #1890ff !important;
+  background: #f0f5ff !important;
 }
 
-.ant-upload-text {
-  font-size: 16px;
-  color: rgba(0, 0, 0, 0.85);
-  margin: 0 0 4px 0;
-  padding: 0 20px;
-  word-break: break-all;
-}
-
-.ant-upload-hint {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+.custom-uploader .ant-upload-btn {
+  padding: 0 !important;
+  height: 100% !important;
+  display: block !important;
 }
 </style>
