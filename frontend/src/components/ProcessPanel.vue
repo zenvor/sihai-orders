@@ -12,55 +12,64 @@
       />
     </div>
 
-    <a-divider style="margin: 20px 0;">当前状态</a-divider>
+    <!-- 左右布局：当前状态 + 处理日志 -->
+    <div class="content-layout">
+      <!-- 左侧：当前状态 -->
+      <div class="status-section">
+        <div class="section-title">当前状态</div>
+        
+        <!-- 状态显示 -->
+        <a-alert
+          :type="alertType"
+          :message="taskInfo.message"
+          show-icon
+          class="status-alert"
+        />
 
-    <!-- 状态显示 -->
-    <a-alert
-      :type="alertType"
-      :message="taskInfo.message"
-      show-icon
-      class="status-alert"
-    />
+        <!-- 步骤显示 -->
+        <div class="steps-container">
+          <a-steps
+            :current="currentStep"
+            :status="stepStatus"
+            size="small"
+            direction="vertical"
+          >
+            <a-step title="读取订单数据" :description="getStepDesc(0)" />
+            <a-step title="解析数据" :description="getStepDesc(1)" />
+            <a-step title="AI 商品映射" :description="getStepDesc(2)" />
+            <a-step title="标准化数据" :description="getStepDesc(3)" />
+            <a-step title="写入 Excel" :description="getStepDesc(4)" />
+            <a-step title="处理完成" :description="getStepDesc(5)" />
+          </a-steps>
+        </div>
+      </div>
 
-    <!-- 步骤显示 -->
-    <div class="steps-container">
-      <a-steps
-        :current="currentStep"
-        :status="stepStatus"
-        size="small"
-        direction="vertical"
-      >
-        <a-step title="读取订单数据" :description="getStepDesc(0)" />
-        <a-step title="解析数据" :description="getStepDesc(1)" />
-        <a-step title="AI 商品映射" :description="getStepDesc(2)" />
-        <a-step title="标准化数据" :description="getStepDesc(3)" />
-        <a-step title="写入 Excel" :description="getStepDesc(4)" />
-        <a-step title="处理完成" :description="getStepDesc(5)" />
-      </a-steps>
-    </div>
-
-    <a-divider style="margin: 20px 0;">处理日志</a-divider>
-
-    <!-- 日志显示 -->
-    <div class="log-container custom-scrollbar">
-      <a-timeline mode="left">
-        <a-timeline-item
-          v-for="(log, index) in taskInfo.logs"
-          :key="index"
-          :color="getLogColor(log.message)"
-        >
-          <template #dot>
-            <span v-if="log.message.includes('✅')">✅</span>
-            <span v-else-if="log.message.includes('❌')">❌</span>
-            <span v-else-if="log.message.includes('🔄')">🔄</span>
-            <ClockCircleOutlined v-else style="font-size: 14px;" />
-          </template>
-          <div class="log-item">
-            <span class="log-time">{{ log.time }}</span>
-            <span class="log-message" :class="{'error-text': log.message.includes('失败') || log.message.includes('❌')}">{{ log.message }}</span>
-          </div>
-        </a-timeline-item>
-      </a-timeline>
+      <!-- 右侧：处理日志 -->
+      <div class="log-section">
+        <div class="section-title">处理日志</div>
+        
+        <!-- 日志显示 -->
+        <div class="log-container custom-scrollbar">
+          <a-timeline mode="left">
+            <a-timeline-item
+              v-for="(log, index) in taskInfo.logs"
+              :key="index"
+              :color="getLogColor(log.message)"
+            >
+              <template #dot>
+                <span v-if="log.message.includes('✅')">✅</span>
+                <span v-else-if="log.message.includes('❌')">❌</span>
+                <span v-else-if="log.message.includes('🔄')">🔄</span>
+                <ClockCircleOutlined v-else style="font-size: 14px;" />
+              </template>
+              <div class="log-item">
+                <span class="log-time">{{ log.time }}</span>
+                <span class="log-message" :class="{'error-text': log.message.includes('失败') || log.message.includes('❌')}">{{ log.message }}</span>
+              </div>
+            </a-timeline-item>
+          </a-timeline>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -118,7 +127,7 @@ const stepStatus = computed(() => {
 const getStepDesc = (step) => {
   const current = currentStep.value
   // 如果任务已完成，所有步骤都显示"已完成"
-  if (taskInfo.value.status === 'completed') return '已完成'
+  if (taskInfo.value.status === 'completed') return '已完成'  
   if (current > step) return '已完成'
   if (current === step) return '进行中...'
   return '等待中'
@@ -182,29 +191,63 @@ watch(() => props.taskId, () => {
 
 .progress-section {
   padding: 0 12px;
+  margin-bottom: 20px;
+}
+
+/* 左右布局容器 */
+.content-layout {
+  display: flex;
+  gap: 24px;
+  min-height: 400px;
+}
+
+/* 左侧状态区域 */
+.status-section {
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 右侧日志区域 */
+.log-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* 分区标题 */
+.section-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 16px;
+  padding-left: 8px;
+  border-left: 3px solid #1890ff;
 }
 
 .status-alert {
   border-radius: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
 .steps-container {
   background: #fafafa;
-  padding: 24px;
+  padding: 20px;
   border-radius: 12px;
   border: 1px solid #f0f0f0;
+  flex: 1;
 }
 
 .log-container {
-  max-height: 400px;
+  flex: 1;
   overflow-y: auto;
   padding: 20px;
-  background: #1e1e1e; /* Dark terminal-like background for logs is often preferred by devs, or soft gray. Let's do Soft Gray/Code block style */
   background: #f8f9fa;
   border-radius: 12px;
   border: 1px solid #e8e8e8;
+  max-height: 450px;
 }
 
 .log-item {
